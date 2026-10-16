@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_tournament_manager/features/communities/data/challonge_public_reader.dart';
 import 'package:dart_tournament_manager/features/communities/application/challonge_native_import.dart';
 import 'package:dart_tournament_manager/features/tournaments/domain/tournament_models.dart';
+import 'package:dart_tournament_manager/tournament_workspace.dart'
+    show ProductionTournamentRuntime;
 
 // Public DCUH202601 data observed 2026-10-08; account and image metadata omitted.
 void main() {
@@ -128,7 +130,7 @@ void main() {
                 ],
             },
             'scorecard_html':
-                '<table><tbody>${rankSeeds.indexed.map((e) => '<tr><td>${e.$1 + 1}</td><td class="participant"><a>${names[e.$2 - 1]}</a></td></tr>').join()}</tbody></table>',
+                '<table><thead><tr><th class="ranking-1">Punkte</th><th class="ranking-2"><span data-title="Siege gegen Gegner mit gleichen Punkten">U</span></th><th class="ranking-3"><span data-title="Gesamtzahl an erzielten Punkten">Pkt</span></th><th class="ranking-4"><span data-title="Median-Buchholz">Buchholz</span></th><th class="ranking-5"><span data-title="Gesamte Anzahl der erzielten Punkte minus aufgegebene Punkte">Pkt Diff</span></th></tr></thead><tbody>${rankSeeds.indexed.map((e) => '<tr><td>${e.$1 + 1}</td><td class="participant"><a>${names[e.$2 - 1]}</a></td></tr>').join()}</tbody></table>',
           },
         ],
       };
@@ -173,6 +175,13 @@ void main() {
       expect(finalStage.rounds.single.single.awayLegs, 1);
       expect(native.importedArchive!.matches, hasLength(31));
       expect(native.importedArchive!.usesNativeLogic, isTrue);
+      expect(native.importedArchive!.nativeValidation!['status'], 'matched');
+      expect(
+        ProductionTournamentRuntime(native)
+            .standings(groups.groups.single, groups.tieBreakers)
+            .map((s) => s.player.name),
+        rankSeeds.map((seed) => names[seed - 1]),
+      );
     },
   );
 }

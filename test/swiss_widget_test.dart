@@ -72,9 +72,9 @@ void main() {
                           groupPlayType: 'swiss',
                           groups: [group],
                           qualificationPlan: null,
-                          tieBreakers: const ['points'],
+                          tieBreakers: const ['swissPoints', 'winsVsTied', 'legsFor', 'medianBuchholz', 'legDifference'],
                         ),
-                        standingsFor: (g, _) => SwissEngine.standings(g),
+                        standingsFor: (g, rules) => SwissEngine.standings(g, tieBreakers: rules),
                         onEditResult: (_) {},
                         canEditResults: true,
                         miniKnockoutBracketBuilder: (_, _, _, _) =>
@@ -90,7 +90,7 @@ void main() {
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
         expect(find.textContaining('Nächste Runde erst'), findsOneWidget);
-        expect(find.text('Buchholz', skipOffstage: false), findsOneWidget);
+        expect(find.text('Median-Buchholz', skipOffstage: false), findsOneWidget);
         if (font.isNotEmpty) {
           await tester.runAsync(() async {
             final render =

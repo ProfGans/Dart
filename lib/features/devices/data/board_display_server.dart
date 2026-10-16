@@ -114,6 +114,9 @@ class BoardDisplayServer extends ChangeNotifier {
       _expiry = Timer.periodic(const Duration(seconds: 2), (_) {
         if (!connected && _source != null) {
           _source = null;
+          _startTimeout?.cancel();
+          _startMatchId = null;
+          _clearPairing();
           _changed();
         }
       });

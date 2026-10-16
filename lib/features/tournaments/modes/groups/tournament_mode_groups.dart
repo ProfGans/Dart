@@ -98,7 +98,7 @@ List<TournamentGroup> _buildTournamentGroupsForPlayers(
           playType: groupPlayType,
           players: groupPlayers,
           matches: groupPlayType == 'swiss'
-              ? SwissEngine.build(groupPlayers, _roundRobinRepeatForStage(stage, groupIndex).clamp(1, SwissEngine.maximumRounds(groupPlayers.length)))
+              ? SwissEngine.build(groupPlayers, _roundRobinRepeatForStage(stage, groupIndex).clamp(1, SwissEngine.maximumRounds(groupPlayers.length)), tieBreakers: stage.groupTieBreakers)
               : _buildRoundRobinMatches(
             groupPlayers,
             repeatCount: _roundRobinRepeatForStage(stage, groupIndex),

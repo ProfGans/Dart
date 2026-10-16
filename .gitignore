@@ -50,3 +50,7 @@ app.*.map.json
 /android/app/google-services.json
 *.jks
 *.keystore
+
+# Local transfer files and remote chat attachments
+/.tmp.driveupload/
+/.codex-remote-attachments/

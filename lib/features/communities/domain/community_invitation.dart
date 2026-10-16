@@ -4,7 +4,7 @@ class CommunityInvitation {
   static String link(String code) => Uri(
     scheme: 'https',
     host: 'profgans.github.io',
-    path: '/DartTunier/invite/',
+    path: '/Dart/invite/',
     queryParameters: {'code': code.trim().toUpperCase()},
   ).toString();
 
@@ -16,7 +16,7 @@ class CommunityInvitation {
     final web =
         uri.scheme == 'https' &&
         uri.host == 'profgans.github.io' &&
-        uri.path == '/DartTunier/invite/';
+        uri.path == '/Dart/invite/';
     if ((!native && !web) ||
         uri.userInfo.isNotEmpty ||
         uri.hasPort ||

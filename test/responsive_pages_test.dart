@@ -19,6 +19,7 @@ import 'community_tournament_import_test.dart' show TournamentImportPreview;
 import 'challonge_import_test.dart' show ChallongeImportPreview, ChallongeArchivePreview;
 import 'challonge_native_import_test.dart' show ChallongeNativeComparisonPreview;
 import 'limited_round_robin_test.dart' show LimitedGroupSetupPreview;
+import 'challonge_tie_breakers_test.dart' show ChallongeTieBreakerPreview;
 import 'player_profile_picker_creation_test.dart'
     show PlayerPickerCreationPreview;
 import 'community_trends_test.dart' show CommunityTrendsPreview;
@@ -228,6 +229,7 @@ void main() {
           const ChallongeArchivePreview(),
           const ChallongeNativeComparisonPreview(),
           const LimitedGroupSetupPreview(initialLimit: 5),
+          const ChallongeTieBreakerPreview(),
           const PlayerPickerCreationPreview(),
           const CommunityTrendsPreview(),
           const ResultsStatisticsPreview(),

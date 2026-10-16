@@ -69,7 +69,7 @@ class ChallongePublicReader {
   Future<ChallongeTournament> tournament(String link) async {
     var uri = validateUrl(link);
     final segments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
-    if (segments.lastOrNull == 'standings') {
+    if (['standings', 'groups'].contains(segments.lastOrNull)) {
       uri = uri.replace(
         path: '/${segments.take(segments.length - 1).join('/')}',
         query: null,

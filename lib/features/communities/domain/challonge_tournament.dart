@@ -193,8 +193,13 @@ class ChallongeTournament {
               'completed_at',
               'group_id',
               'group_type',
+              'ranking_rules',
               'player1_seed',
               'player2_seed',
+              'player1_prereq_identifier',
+              'player2_prereq_identifier',
+              'player1_is_prereq_match_loser',
+              'player2_is_prereq_match_loser',
             ])
               key: m[key],
           },

@@ -588,7 +588,7 @@ class _TournamentRunPageState extends State<_LiveTournamentRunPage> with Widgets
 
       if (stage is GroupTournamentRunStage) {
         for (final group in stage.groups) {
-          if (group.playType == 'swiss') SwissEngine.advance(group);
+          if (group.playType == 'swiss') SwissEngine.advance(group, tieBreakers: stage.tieBreakers);
           if (_isEliminationGroupPlayType(group.playType)) {
             if (group.eliminationLossLimit == 2) {
               _advanceDoubleEliminationRounds(group.knockoutRounds, finalEndsTournament: group.finalEndsTournament);
@@ -796,6 +796,8 @@ class _TournamentRunPageState extends State<_LiveTournamentRunPage> with Widgets
     for (final tieBreaker in stage.tieBreakers) {
       final comparison = switch (tieBreaker) {
         'points' => b.standing.points.compareTo(a.standing.points),
+        'matchWins' => (2 * b.standing.wins + b.standing.draws).compareTo(2 * a.standing.wins + a.standing.draws),
+        'setWins' => b.standing.wins.compareTo(a.standing.wins),
         'legDifference' => b.standing.legDifference.compareTo(
           a.standing.legDifference,
         ),
@@ -1222,6 +1224,7 @@ class _TournamentRunPageState extends State<_LiveTournamentRunPage> with Widgets
               standings[above],
               stage.tieBreakers,
               group.matches,
+              standings,
             ) !=
             0) {
           break;
@@ -1234,6 +1237,7 @@ class _TournamentRunPageState extends State<_LiveTournamentRunPage> with Widgets
               standings[below],
               stage.tieBreakers,
               group.matches,
+              standings,
             ) !=
             0) {
           break;
@@ -1277,13 +1281,15 @@ class _TournamentRunPageState extends State<_LiveTournamentRunPage> with Widgets
     PlayerStanding b,
     List<String> tieBreakers,
     List<GroupMatch> matches,
+    List<PlayerStanding> standings,
   ) {
-    for (final tieBreaker in tieBreakers) {
+    for (final (index, tieBreaker) in tieBreakers.indexed) {
       final comparison = switch (tieBreaker) {
         'points' => b.points.compareTo(a.points),
         'legDifference' => b.legDifference.compareTo(a.legDifference),
         'legsFor' => b.legsFor.compareTo(a.legsFor),
         'headToHead' => _compareHeadToHead(a, b, matches),
+        'matchWins' || 'winsVsTied' || 'setWins' => GroupTieBreakerEngine.compare(a, b, tieBreakers.take(index + 1).toList(), standings, matches),
         _ => 0,
       };
 
@@ -1439,7 +1445,7 @@ class _TournamentRunPageState extends State<_LiveTournamentRunPage> with Widgets
     List<String> tieBreakers,
   ) {
     if (group.playType == 'swiss') {
-      final rows = SwissEngine.standings(group);
+      final rows = SwissEngine.standings(group, tieBreakers: tieBreakers);
       return [...rows.where((s) => PlayerWithdrawalService.policy(widget.tournament, s.player) == null),
         ...rows.where((s) => PlayerWithdrawalService.policy(widget.tournament, s.player) != null)];
     }
@@ -1490,6 +1496,7 @@ class _TournamentRunPageState extends State<_LiveTournamentRunPage> with Widgets
         b,
         tieBreakers,
         matches: group.matches,
+        standings: sorted,
       );
       if (comparison != 0) {
         return comparison;
@@ -1505,13 +1512,15 @@ class _TournamentRunPageState extends State<_LiveTournamentRunPage> with Widgets
     PlayerStanding b,
     List<String> tieBreakers, {
     List<GroupMatch> matches = const [],
+    List<PlayerStanding> standings = const [],
   }) {
-    for (final tieBreaker in tieBreakers) {
+    for (final (index, tieBreaker) in tieBreakers.indexed) {
       final comparison = switch (tieBreaker) {
         'points' => b.points.compareTo(a.points),
         'legDifference' => b.legDifference.compareTo(a.legDifference),
         'legsFor' => b.legsFor.compareTo(a.legsFor),
         'headToHead' => _compareHeadToHead(a, b, matches),
+        'matchWins' || 'winsVsTied' || 'setWins' => GroupTieBreakerEngine.compare(a, b, tieBreakers.take(index + 1).toList(), standings, matches),
         _ => 0,
       };
 

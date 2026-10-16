@@ -46,6 +46,7 @@ class SimulationGroupStageSpec extends SimulationStageSpec {
     this.playTypes = const [],
     this.roundRobinRepeats = const [],
     this.maxGamesPerPlayer = const [],
+    this.tieBreakers = defaultGroupTieBreakers,
     this.fixedPerGroup = 1,
     this.fixedByGroup = const [],
     this.extraRank = 0,
@@ -57,6 +58,7 @@ class SimulationGroupStageSpec extends SimulationStageSpec {
   final List<String> playTypes;
   final List<int> roundRobinRepeats;
   final List<int?> maxGamesPerPlayer;
+  final List<String> tieBreakers;
   final int fixedPerGroup;
   final List<int> fixedByGroup;
   final int extraRank;
@@ -192,6 +194,7 @@ class TournamentSimulationEngine {
             groupPlayTypes: spec.playTypes,
             groupRoundRobinRepeats: spec.roundRobinRepeats,
             groupMaxGamesPerPlayer: spec.maxGamesPerPlayer,
+            groupTieBreakers: spec.tieBreakers,
             qualifiedParticipantCount: spec.qualifiers,
             fixedQualifiersByGroup: spec.fixedByGroup.isNotEmpty
                 ? spec.fixedByGroup

@@ -35,6 +35,7 @@ class ChallongeImportService {
     Map<String, String> assignments = const {},
     bool countsForRanking = false,
     bool useNativeLogic = false,
+    bool refreshExisting = false,
     List<String> rankingIds = const [],
     void Function(String)? progress,
   }) async {
@@ -44,14 +45,17 @@ class ChallongeImportService {
       );
     }
     final members = effectiveCommunityMembers(await loadMembers()).toList();
-    final existing = (await loadTournaments())
+    final loaded = await loadTournaments();
+    final existing = loaded
         .where(
           (t) => !useNativeLogic || t.importedArchive?.usesNativeLogic != false,
         )
-        .map((t) => t.id)
+        .map((t) => t.importedArchive == null || t.communityId == null
+            ? t.id
+            : 'challonge:${Uri.encodeComponent(t.communityId!)}:${t.importedArchive!.sourceId}')
         .toSet();
     final pending = {for (final t in sources) t.id: t}.values
-        .where((t) => !existing.contains(t.tournamentId(communityId)))
+        .where((t) => refreshExisting || !existing.contains(t.tournamentId(communityId)))
         .toList();
     var needsMembers = false;
     // Validate every assignment before creating the first member.
@@ -114,9 +118,17 @@ class ChallongeImportService {
         countsForRanking: countsForRanking,
         rankingIds: rankingIds,
       );
-      await saveTournament(
-        useNativeLogic ? ChallongeNativeImport.convert(converted) : converted,
-      );
+      final previous = loaded.where((saved) => saved.communityId == communityId && saved.importedArchive?.sourceId == t.id).firstOrNull;
+      var destination = useNativeLogic ? ChallongeNativeImport.convert(converted) : converted;
+      if (previous != null) {
+        destination = CreatedTournament.fromJson(destination.toJson()
+          ..['id'] = previous.id
+          ..['access'] = previous.access.toJson()
+          ..['syncRevision'] = previous.syncRevision
+          ..['countsForRanking'] = refreshExisting ? previous.countsForRanking : countsForRanking
+          ..['communityRankingIds'] = refreshExisting ? previous.communityRankingIds : rankingIds);
+      }
+      await saveTournament(destination);
       count++;
     }
     return count;

@@ -1,4 +1,4 @@
-param([string]$Repository = 'ProfGans/DartTunier')
+param([string]$Repository = 'ProfGans/Dart')
 $ErrorActionPreference = 'Stop'
 if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
     throw 'GitHub CLI (gh) installieren und gh auth login ausführen. Alternativ die vier Secrets laut docs/android-releases.md im GitHub-Webinterface hinterlegen.'

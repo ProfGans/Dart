@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'challonge_ranking_rules.dart';
 import 'package:html/parser.dart' as html;
 import 'package:html/dom.dart' show Element;
 import '../domain/challonge_tournament.dart';
@@ -140,6 +141,10 @@ class ChallongePublicDocument {
         'group_type': groupType,
         'player1_seed': value['player1']?['seed'],
         'player2_seed': value['player2']?['seed'],
+        'player1_prereq_identifier': value['player1_prereq_identifier'],
+        'player2_prereq_identifier': value['player2_prereq_identifier'],
+        'player1_is_prereq_match_loser': value['player1_is_prereq_match_loser'],
+        'player2_is_prereq_match_loser': value['player2_is_prereq_match_loser'],
         'started_at': value['underway_at'],
         'completed_at': value['completed_at'],
       };
@@ -149,9 +154,13 @@ class ChallongePublicDocument {
       final groupType = group == null
           ? null
           : b['tournament']?['tournament_type'] as String?;
+      final rankingRules = challongeRankingRules(group == null ? standings : '${b['scorecard_html'] ?? ''}');
       for (final round in (b['matches_by_round'] as Map? ?? const {}).values) {
         for (final m in round as List) {
           addMatch(m, group, groupType);
+          if (m is Map && matches['${m['id']}'] != null && rankingRules.isNotEmpty) {
+            matches['${m['id']}']!['ranking_rules'] = rankingRules;
+          }
         }
       }
       addMatch(b['third_place_match'], group, groupType);

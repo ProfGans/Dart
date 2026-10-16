@@ -71,12 +71,16 @@ class GroupByeSeeding {
     for (final rule in tieBreakers) {
       final aValue = switch (rule) {
         'points' => a.standing.points,
+        'matchWins' => 2 * a.standing.wins + a.standing.draws,
+        'setWins' => a.standing.wins,
         'legDifference' => a.standing.legDifference,
         'legsFor' => a.standing.legsFor,
         _ => 0,
       };
       final bValue = switch (rule) {
         'points' => b.standing.points,
+        'matchWins' => 2 * b.standing.wins + b.standing.draws,
+        'setWins' => b.standing.wins,
         'legDifference' => b.standing.legDifference,
         'legsFor' => b.standing.legsFor,
         _ => 0,

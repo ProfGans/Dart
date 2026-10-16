@@ -31,6 +31,11 @@ String tieBreakerLabel(String tieBreaker) {
     'legDifference' => 'Leg-Differenz',
     'legsFor' => 'Gewonnene Legs',
     'headToHead' => 'Direkter Vergleich',
+    'matchWins' => 'Matchsiege (Remis zählt halb)',
+    'winsVsTied' => 'Siege gegen punktgleiche Spieler',
+    'setWins' => 'Ergebnissatzsiege',
+    'swissPoints' => 'Swiss-Punkte (1/0,5/0, Freilos 1)',
+    'medianBuchholz' => 'Median-Buchholz',
     _ => tieBreaker,
   };
 }

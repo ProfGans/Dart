@@ -48,6 +48,11 @@ class _RemoteHostSurfaceState extends State<RemoteHostSurface> {
     super.initState();
     widget.controller.capture = _capture;
     widget.controller.onInput = _input;
+    widget.controller.addListener(_connectionChanged);
+  }
+
+  void _connectionChanged() {
+    if (!widget.controller.connected) _cancel();
   }
 
   EditableTextState? get _editor {
@@ -211,6 +216,7 @@ class _RemoteHostSurfaceState extends State<RemoteHostSurface> {
 
   @override
   void dispose() {
+    widget.controller.removeListener(_connectionChanged);
     _cancel();
     widget.controller.capture = null;
     widget.controller.onInput = null;
@@ -220,49 +226,51 @@ class _RemoteHostSurfaceState extends State<RemoteHostSurface> {
   @override
   Widget build(BuildContext context) => RepaintBoundary(
     key: _boundary,
-    child: AnimatedBuilder(
-      animation: widget.controller,
-      builder: (context, _) => Column(
-        children: [
-          if (widget.controller.enabled)
-            Material(
-              color: Theme.of(context).colorScheme.secondaryContainer,
-              child: SafeArea(
-                bottom: false,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Wrap(
-                    spacing: 12,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      Text(
-                        widget.controller.connected
-                            ? 'Fernbedienung verbunden'
-                            : 'Fernsteuerung freigegeben',
-                      ),
-                      TextButton(
-                        onPressed: () => widget.controller.setEnabled(false),
-                        child: const Text('Freigabe beenden'),
-                      ),
-                    ],
+    child: Overlay.wrap(
+      child: AnimatedBuilder(
+        animation: widget.controller,
+        builder: (context, _) => Column(
+          children: [
+            if (widget.controller.enabled)
+              Material(
+                color: Theme.of(context).colorScheme.secondaryContainer,
+                child: SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Wrap(
+                      spacing: 12,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(
+                          widget.controller.connected
+                              ? 'Fernbedienung verbunden'
+                              : 'Fernsteuerung freigegeben',
+                        ),
+                        TextButton(
+                          onPressed: () => widget.controller.setEnabled(false),
+                          child: const Text('Freigabe beenden'),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          Expanded(
-            child: Stack(
-              children: [
-                widget.child,
-                if (widget.controller.pendingName != null)
-                  Positioned.fill(
-                    child: RemoteConfirmationView(
-                      controller: widget.controller,
+            Expanded(
+              child: Stack(
+                children: [
+                  widget.child,
+                  if (widget.controller.pendingName != null)
+                    Positioned.fill(
+                      child: RemoteConfirmationView(
+                        controller: widget.controller,
+                      ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     ),
   );

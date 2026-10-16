@@ -64,6 +64,7 @@ class _ChallongeImportState extends State<ChallongeImportPage> {
   final _nativeErrors = <String, String>{};
   bool _busy = false;
   bool _countsForRanking = false;
+  bool _refreshExisting = false;
   List<String> _rankingIds = ['default'];
   int _revision = 0;
   String? _status, _error;
@@ -106,11 +107,14 @@ class _ChallongeImportState extends State<ChallongeImportPage> {
     _existing = {
       for (final t in [...remote, ...local])
         if (t.importedArchive?.usesNativeLogic != false) t.id,
+      for (final t in [...remote, ...local])
+        if (t.importedArchive != null && t.importedArchive!.usesNativeLogic != false && t.communityId != null)
+          'challonge:${Uri.encodeComponent(t.communityId!)}:${t.importedArchive!.sourceId}',
     };
     _nativeReports.clear();
     _nativeErrors.clear();
     for (final source in sources) {
-      if (_existing.contains(source.tournamentId(widget.community.id))) {
+      if (!_refreshExisting && _existing.contains(source.tournamentId(widget.community.id))) {
         continue;
       }
       try {
@@ -240,6 +244,7 @@ class _ChallongeImportState extends State<ChallongeImportPage> {
       assignments: _assignments,
       countsForRanking: _countsForRanking,
       useNativeLogic: true,
+      refreshExisting: _refreshExisting,
       rankingIds: _countsForRanking ? _rankingIds : const [],
       progress: (s) {
         if (mounted) setState(() => _status = s);
@@ -257,7 +262,7 @@ class _ChallongeImportState extends State<ChallongeImportPage> {
   @override
   Widget build(BuildContext context) {
     final pending = _preview
-        .where((t) => !_existing.contains(t.tournamentId(widget.community.id)))
+        .where((t) => _refreshExisting || !_existing.contains(t.tournamentId(widget.community.id)))
         .toList();
     final names = {
       for (final t in pending)
@@ -387,7 +392,7 @@ class _ChallongeImportState extends State<ChallongeImportPage> {
                 ListTile(
                   title: Text(t.title),
                   subtitle: Text(
-                    _existing.contains(t.tournamentId(widget.community.id))
+                    !_refreshExisting && _existing.contains(t.tournamentId(widget.community.id))
                         ? 'Bereits importiert – wird übersprungen'
                         : [
                             '${t.participants.length} Teilnehmer · ${t.matches.length} Spiele · ${t.participants.where((p) => p['final_rank'] != null).length} Platzierungen',
@@ -450,6 +455,16 @@ class _ChallongeImportState extends State<ChallongeImportPage> {
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
+                title: const Text('Bereits importierte Turniere aktualisieren'),
+                subtitle: const Text('Ergebnisse und Wertungsregeln erneut aus Challonge übernehmen. Bestehende Kennung, Turnierrechte und Elo-Auswahl bleiben erhalten.'),
+                value: _refreshExisting,
+                onChanged: _busy ? null : (value) {
+                  setState(() => _refreshExisting = value);
+                  _work(() => _prepare(_preview));
+                },
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
                 title: const Text('Für Elo und Community-Ranglisten werten'),
                 subtitle: const Text(
                   'Gilt für neue und umgestellte Turniere dieses Imports. Historische Ergebnisse werden nach dem Turnierdatum eingerechnet. Ohne Spielzeitangaben werden Gruppenspiele vor K.-o.-Spielen gewertet.',
@@ -482,6 +497,19 @@ class _ChallongeImportState extends State<ChallongeImportPage> {
                 label: Text(
                   '${pending.length} Turniere und fehlende Mitglieder importieren',
                 ),
+              ),
+              OutlinedButton.icon(
+                onPressed: _busy
+                    ? null
+                    : () => _work(() async {
+                        await _storage.synchronize();
+                        if (mounted) {
+                          setState(() => _status =
+                              TournamentStorage.syncStatus.value);
+                        }
+                      }),
+                icon: const Icon(Icons.sync),
+                label: const Text('Synchronisierung erneut versuchen'),
               ),
             ],
             if (_busy) const LinearProgressIndicator(),

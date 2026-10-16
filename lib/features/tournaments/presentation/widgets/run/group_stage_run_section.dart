@@ -80,10 +80,12 @@ class _GroupStageRunSectionState extends State<GroupStageRunSection> {
                 const SizedBox(height: 12),
               ],
               if (stage.groups.any((g) => g.playType == 'swiss'))
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 12),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
                   child: Text(
-                    'Swiss: Nächste Runde erst nach allen Ergebnissen der vorherigen Runde. Wertung: Punkte, Buchholz (Gegnerpunkte), Leg-Differenz, gewonnene Legs, Startreihenfolge. Freilos: 3 Punkte, kein gespieltes Match.',
+                    stage.tieBreakers.contains('swissPoints')
+                        ? 'Swiss: Sieg und Freilos zählen 1 Punkt, Remis 0,5 Punkte. Wertung: ${stage.tieBreakers.map(tieBreakerLabel).join(', ')}. Nächste Runde erst nach allen Ergebnissen der vorherigen Runde.'
+                        : 'Swiss: Nächste Runde erst nach allen Ergebnissen der vorherigen Runde. Wertung: Punkte, Buchholz (Gegnerpunkte), Leg-Differenz, gewonnene Legs, Startreihenfolge. Freilos: 3 Punkte, kein gespieltes Match.',
                   ),
                 ),
               if (compact && stage.groups.length > 1) ...[

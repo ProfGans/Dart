@@ -20,6 +20,12 @@ class StandingsTable extends StatelessWidget {
   final QualificationPlan? qualificationPlan;
   final List<String> tieBreakers;
 
+  String _points(num value) {
+    final scaled = group.playType == 'swiss' && tieBreakers.contains('swissPoints')
+        ? value / 2 : value;
+    return scaled == scaled.roundToDouble() ? '${scaled.toInt()}' : '$scaled';
+  }
+
   bool _isFixedQualificationPlace(int place) {
     final plan = qualificationPlan;
     if (plan == null) {
@@ -76,7 +82,7 @@ class StandingsTable extends StatelessWidget {
           DataColumn(label: Text('Legs')),
           DataColumn(label: Text('Diff')),
           DataColumn(label: Text('Pkt')),
-          if (group.playType == 'swiss') const DataColumn(label: Tooltip(message: 'Summe der Punkte der gespielten Gegner; Freilose zählen nicht mit.', child: Text('Buchholz'))),
+          if (group.playType == 'swiss') DataColumn(label: Tooltip(message: tieBreakers.contains('medianBuchholz') ? 'Gegnerpunkte ohne den besten und schlechtesten Wert; Freilose zählen nicht mit.' : 'Summe der Punkte der gespielten Gegner; Freilose zählen nicht mit.', child: Text(tieBreakers.contains('medianBuchholz') ? 'Median-Buchholz' : 'Buchholz'))),
         ],
         rows: [
           for (var index = 0; index < standings.length; index++)
@@ -146,12 +152,12 @@ class StandingsTable extends StatelessWidget {
                 ),
                 DataCell(
                   _StandingText(
-                    '${standings[index].points}',
+                    _points(standings[index].points),
                     isDark: _isSureQualification(standings[index], index + 1),
                   ),
                 ),
                 if (group.playType == 'swiss') DataCell(_StandingText(
-                  '${SwissEngine.buchholz(group, standings[index].player, standings)}',
+                  _points(tieBreakers.contains('medianBuchholz') ? SwissEngine.medianBuchholz(group, standings[index].player, standings) : SwissEngine.buchholz(group, standings[index].player, standings)),
                   isDark: _isSureQualification(standings[index], index + 1),
                 )),
               ],

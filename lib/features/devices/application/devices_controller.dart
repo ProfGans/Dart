@@ -200,8 +200,19 @@ class DevicesController extends ChangeNotifier {
     await refreshAccount();
   });
   void _changed() {
+    final connected = receiver.connected;
+    if (_wasConnected && !connected) {
+      showDisplay = false;
+      _lastScorerMatch = null;
+    }
+    if (!_wasConnected && connected && receiver.display != null) {
+      showDisplay = true;
+    }
+    _wasConnected = connected;
     final incoming = receiver.display;
-    if (incoming?.state == 'running' && incoming?.matchId != _lastScorerMatch) {
+    if (connected &&
+        incoming?.state == 'running' &&
+        incoming?.matchId != _lastScorerMatch) {
       _lastScorerMatch = incoming?.matchId;
       showDisplay = true;
     }
@@ -209,6 +220,7 @@ class DevicesController extends ChangeNotifier {
   }
 
   String? _lastScorerMatch;
+  bool _wasConnected = false;
 
   @override
   void dispose() {

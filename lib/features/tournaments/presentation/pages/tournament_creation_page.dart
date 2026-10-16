@@ -2321,6 +2321,9 @@ class _TournamentCreationPageState extends State<TournamentCreationPage> {
                     children: [
                       GroupTieBreakerSetup(
                         tieBreakers: _groupTieBreakers,
+                        onChangeTieBreakers: (rules) => setState(() {
+                          _groupTieBreakers..clear()..addAll(rules);
+                        }),
                         onMoveTieBreaker: _moveGroupTieBreaker,
                       ),
                     ],

@@ -12,6 +12,14 @@ LeagueMatch rhlDevelopmentScenario() => LeagueMatch.rhl(
 );
 
 const tournamentDevelopmentScenarios = [
+  TournamentSimulationScenario(name: 'Swiss mit Challonge-Punkten und Median-Buchholz', playerCount: 13, stages: [
+    SimulationGroupStageSpec(name: 'Swiss', qualifiers: 2, groupSizes: [13], playTypes: ['swiss'], roundRobinRepeats: [5], fixedPerGroup: 2, tieBreakers: ['swissPoints','winsVsTied','legsFor','medianBuchholz','legDifference']),
+    SimulationEliminationStageSpec(name: 'Finale', qualifiers: 1, lossLimit: 1),
+  ]),
+  TournamentSimulationScenario(name: 'Challonge-Regeln: Gruppensiege und Siege gegen punktgleiche Spieler', playerCount: 10, stages: [
+    SimulationGroupStageSpec(name: 'Gruppe', qualifiers: 4, groupSizes: [10], fixedPerGroup: 4, tieBreakers: ['matchWins','winsVsTied','setWins','legsFor']),
+    SimulationEliminationStageSpec(name: 'KO', qualifiers: 1, lossLimit: 1),
+  ]),
   TournamentSimulationScenario(name: 'Begrenzte Gruppe: 13 Spieler mit maximal 5 Spielen und Finale', playerCount: 13, stages: [
     SimulationGroupStageSpec(name: 'Gruppe', qualifiers: 2, groupSizes: [13], maxGamesPerPlayer: [5], fixedPerGroup: 2),
     SimulationEliminationStageSpec(name: 'Finale', qualifiers: 1, lossLimit: 1),

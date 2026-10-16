@@ -1,11 +1,11 @@
-# Android-Updates über ProfGans/DartTunier
+# Android-Updates über ProfGans/Dart
 
 Die App verwendet das bestehende öffentliche Repository. Keine GitHub-Tokens werden in die APK eingebaut. Unter Einstellungen → Updates wird manuell nach veröffentlichten Android-Releases gesucht. Standardmäßig sind nur stabile Versionen aktiviert; **Beta-Updates einschließen** berücksichtigt zusätzlich GitHub-Vorabversionen. Die Auswahl bleibt nach einem Neustart erhalten.
 
 ## Einmalige Einrichtung
 
 1. Der neue Release-Keystore wurde lokal unter `.secrets/android/release.jks` erstellt; die zugehörigen Werte liegen in `.secrets/android/github-secrets.json`. Diesen gesamten Ordner verschlüsselt außerhalb des Computers sichern. Paket-ID bleibt `de.dartturnierverwaltung.app`. Ohne denselben Signaturschlüssel sind spätere Updates nicht möglich. Keinen neuen Keystore für spätere Versionen erzeugen.
-2. Unter GitHub → ProfGans/DartTunier → Settings → Secrets and variables → Actions diese Repository-Secrets hinterlegen:
+2. Unter GitHub → ProfGans/Dart → Settings → Secrets and variables → Actions diese Repository-Secrets hinterlegen:
    - `ANDROID_KEYSTORE_BASE64`: Base64-Inhalt des Keystores.
    - `ANDROID_STORE_PASSWORD`: Keystore-Passwort.
    - `ANDROID_KEY_PASSWORD`: Schlüssel-Passwort.

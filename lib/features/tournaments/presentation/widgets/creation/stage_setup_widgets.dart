@@ -99,7 +99,8 @@ class RoundRobinRepeatsSetup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (groupSizes.isEmpty || !playTypes.any((t) => t == 'round_robin' || t == 'swiss')) {
+    if (groupSizes.isEmpty ||
+        !playTypes.any((t) => t == 'round_robin' || t == 'swiss')) {
       return const SizedBox.shrink();
     }
 
@@ -111,14 +112,18 @@ class RoundRobinRepeatsSetup extends StatelessWidget {
           style: Theme.of(context).textTheme.titleMedium,
         ),
         if (playTypes.contains('swiss'))
-          const Text('Swiss: feste Rundenzahl, maximal die aufgerundete halbe Teilnehmerzahl je Gruppe. Die nächste Runde wartet auf alle Ergebnisse.'),
+          const Text(
+            'Swiss: feste Rundenzahl, maximal die aufgerundete halbe Teilnehmerzahl je Gruppe. Die nächste Runde wartet auf alle Ergebnisse.',
+          ),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: [
             for (var index = 0; index < groupSizes.length; index++)
-              if (index < playTypes.length && (playTypes[index] == 'round_robin' || playTypes[index] == 'swiss'))
+              if (index < playTypes.length &&
+                  (playTypes[index] == 'round_robin' ||
+                      playTypes[index] == 'swiss'))
                 Container(
                   padding: const EdgeInsets.only(left: 10),
                   decoration: BoxDecoration(
@@ -145,7 +150,11 @@ class RoundRobinRepeatsSetup extends StatelessWidget {
                         icon: const Icon(Icons.remove),
                         tooltip: 'Weniger Spiele',
                       ),
-                      Text(playTypes[index] == 'swiss' ? '${repeats[index]} Runden' : '${repeats[index]}x'),
+                      Text(
+                        playTypes[index] == 'swiss'
+                            ? '${repeats[index]} Runden'
+                            : '${repeats[index]}x',
+                      ),
                       IconButton(
                         key: ValueKey('round-robin-repeat-plus-${index + 1}'),
                         constraints: const BoxConstraints.tightFor(
@@ -153,7 +162,12 @@ class RoundRobinRepeatsSetup extends StatelessWidget {
                           height: 48,
                         ),
                         padding: EdgeInsets.zero,
-                        onPressed: playTypes[index] == 'swiss' && repeats[index] >= SwissEngine.maximumRounds(groupSizes[index]) ? null : () => onChangeRepeats(index, 1),
+                        onPressed:
+                            playTypes[index] == 'swiss' &&
+                                repeats[index] >=
+                                    SwissEngine.maximumRounds(groupSizes[index])
+                            ? null
+                            : () => onChangeRepeats(index, 1),
                         icon: const Icon(Icons.add),
                         tooltip: 'Mehr Spiele',
                       ),
@@ -213,7 +227,10 @@ class GroupPlayTypeSetup extends StatelessWidget {
                   ),
                   items: const [
                     DropdownMenuItem(value: 'round_robin', child: Text('Liga')),
-                    DropdownMenuItem(value: 'swiss', child: Text('Schweizer System')),
+                    DropdownMenuItem(
+                      value: 'swiss',
+                      child: Text('Schweizer System'),
+                    ),
                     DropdownMenuItem(
                       value: 'mini_knockout',
                       child: Text('Mini-KO'),
@@ -305,10 +322,12 @@ class GroupTieBreakerSetup extends StatelessWidget {
     super.key,
     required this.tieBreakers,
     required this.onMoveTieBreaker,
+    this.onChangeTieBreakers,
   });
 
   final List<String> tieBreakers;
   final void Function(int index, int direction) onMoveTieBreaker;
+  final ValueChanged<List<String>>? onChangeTieBreakers;
 
   @override
   Widget build(BuildContext context) {
@@ -316,6 +335,59 @@ class GroupTieBreakerSetup extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text('Tie-Breaker', style: Theme.of(context).textTheme.titleMedium),
+        if (onChangeTieBreakers != null)
+          Wrap(
+            children: [
+              TextButton(
+                onPressed: () =>
+                    onChangeTieBreakers!(List.of(defaultGroupTieBreakers)),
+                child: const Text('Standardregeln'),
+              ),
+              TextButton(
+                onPressed: () => onChangeTieBreakers!(const [
+                  'matchWins',
+                  'winsVsTied',
+                  'setWins',
+                  'legsFor',
+                ]),
+                child: const Text('Challonge-Regeln für Dartgruppen'),
+              ),
+              TextButton(
+                onPressed: () => onChangeTieBreakers!(const [
+                  'swissPoints',
+                  'winsVsTied',
+                  'legsFor',
+                  'medianBuchholz',
+                  'legDifference',
+                ]),
+                child: const Text('Challonge-Regeln für Swiss'),
+              ),
+              PopupMenuButton<String>(
+                tooltip: 'Wertungsregel hinzufügen',
+                onSelected: (rule) =>
+                    onChangeTieBreakers!([...tieBreakers, rule]),
+                itemBuilder: (_) => [
+                  for (final rule in [
+                    ...defaultGroupTieBreakers,
+                    'matchWins',
+                    'winsVsTied',
+                    'setWins',
+                    'swissPoints',
+                    'medianBuchholz',
+                  ])
+                    if (!tieBreakers.contains(rule))
+                      PopupMenuItem(
+                        value: rule,
+                        child: Text(tieBreakerLabel(rule)),
+                      ),
+                ],
+                child: const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Text('Regel hinzufügen'),
+                ),
+              ),
+            ],
+          ),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -330,37 +402,18 @@ class GroupTieBreakerSetup extends StatelessWidget {
                   ),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircleAvatar(radius: 12, child: Text('${index + 1}')),
-                    const SizedBox(width: 8),
-                    Flexible(child: Text(tieBreakerLabel(tieBreakers[index]))),
-                    IconButton(
-                      constraints: const BoxConstraints.tightFor(
-                        width: 48,
-                        height: 48,
-                      ),
-                      padding: EdgeInsets.zero,
-                      onPressed: index == 0
-                          ? null
-                          : () => onMoveTieBreaker(index, -1),
-                      icon: const Icon(Icons.keyboard_arrow_up),
-                      tooltip: 'Tie-Breaker nach oben',
-                    ),
-                    IconButton(
-                      constraints: const BoxConstraints.tightFor(
-                        width: 48,
-                        height: 48,
-                      ),
-                      padding: EdgeInsets.zero,
-                      onPressed: index == tieBreakers.length - 1
-                          ? null
-                          : () => onMoveTieBreaker(index, 1),
-                      icon: const Icon(Icons.keyboard_arrow_down),
-                      tooltip: 'Tie-Breaker nach unten',
-                    ),
-                  ],
+                child: _GroupTieBreakerItem(
+                  index: index,
+                  label: tieBreakerLabel(tieBreakers[index]),
+                  moveUp: index == 0 ? null : () => onMoveTieBreaker(index, -1),
+                  moveDown: index == tieBreakers.length - 1
+                      ? null
+                      : () => onMoveTieBreaker(index, 1),
+                  remove: onChangeTieBreakers == null || tieBreakers.length < 2
+                      ? null
+                      : () => onChangeTieBreakers!(
+                          [...tieBreakers]..removeAt(index),
+                        ),
                 ),
               ),
           ],
@@ -368,6 +421,75 @@ class GroupTieBreakerSetup extends StatelessWidget {
       ],
     );
   }
+}
+
+class _GroupTieBreakerItem extends StatelessWidget {
+  const _GroupTieBreakerItem({
+    required this.index,
+    required this.label,
+    this.moveUp,
+    this.moveDown,
+    this.remove,
+  });
+  final int index;
+  final String label;
+  final VoidCallback? moveUp, moveDown, remove;
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final controls = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (remove != null)
+            IconButton(
+              onPressed: remove,
+              icon: const Icon(Icons.close),
+              tooltip: 'Wertungsregel entfernen',
+            ),
+          IconButton(
+            onPressed: moveUp,
+            icon: const Icon(Icons.keyboard_arrow_up),
+            tooltip: 'Tie-Breaker nach oben',
+            constraints: const BoxConstraints.tightFor(width: 48, height: 48),
+          ),
+          IconButton(
+            onPressed: moveDown,
+            icon: const Icon(Icons.keyboard_arrow_down),
+            tooltip: 'Tie-Breaker nach unten',
+            constraints: const BoxConstraints.tightFor(width: 48, height: 48),
+          ),
+        ],
+      );
+      final heading = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CircleAvatar(radius: 12, child: Text('${index + 1}')),
+          const SizedBox(width: 8),
+          Flexible(child: Text(label)),
+        ],
+      );
+      if (constraints.maxWidth < 600 ||
+          MediaQuery.textScalerOf(context).scale(14) > 21) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 8, right: 10),
+              child: heading,
+            ),
+            Align(alignment: Alignment.centerRight, child: controls),
+          ],
+        );
+      }
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(child: heading),
+          controls,
+        ],
+      );
+    },
+  );
 }
 
 class QualificationRuleSummary extends StatelessWidget {

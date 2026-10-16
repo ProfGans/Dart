@@ -2,6 +2,7 @@ import '../../../../shared/widgets/sport_menu.dart';
 import 'package:dart_tournament_manager/tournament_workspace.dart' show ProductionTournamentRuntime;
 import 'package:dart_tournament_manager/shared/widgets/adaptive_content.dart';
 import '../../domain/engines/placement_engine.dart';
+import '../../domain/engines/knockout_shared_places.dart';
 import '../../domain/knockout_round_names.dart';
 import 'package:flutter/material.dart';
 
@@ -21,7 +22,7 @@ class TournamentResultsPage extends StatelessWidget {
       return ChallongeArchivePage(tournament: tournament);
     }
     final summary = _TournamentResultSummary.fromTournament(tournament);
-    final podium = summary.ranking.take(3).toList();
+    final podium = summary.ranking.where((s) => s.place <= 3).toList();
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -163,7 +164,7 @@ class TournamentResultsPage extends StatelessWidget {
                 children: [
                   for (var index = 0; index < summary.ranking.length; index++)
                     _RankingRow(
-                      place: index + 1,
+                      place: summary.ranking[index].place,
                       stats: summary.ranking[index],
                       maxLegs: summary.maxLegs,
                       onTap: () =>
@@ -236,7 +237,7 @@ class _Podium extends StatelessWidget {
                     Icon(medals[index], size: 34, color: colors[index]),
                     const SizedBox(height: 6),
                     Text(
-                      '${index + 1}. Platz',
+                      '${ranking[index].place}. Platz',
                       style: Theme.of(context).textTheme.labelLarge,
                     ),
                     const SizedBox(height: 4),
@@ -401,7 +402,7 @@ class _TournamentPlayerListPage extends StatelessWidget {
             children: [
               for (var index = 0; index < ranking.length; index++)
                 _RankingRow(
-                  place: index + 1,
+                  place: ranking[index].place,
                   stats: ranking[index],
                   maxLegs: ranking.fold<int>(
                     0,
@@ -664,6 +665,11 @@ class _TournamentResultSummary {
         stats.values.where((entry) => !ranking.contains(entry)).toList()
           ..sort(_compareStats);
     ranking.addAll(remaining);
+    final sharedPlaces = finalStage is KnockoutTournamentRunStage
+        ? knockoutSharedPlaces(finalStage) : <String, int>{};
+    for (final entry in ranking.indexed) {
+      entry.$2.place = sharedPlaces[entry.$2.player.profileId ?? entry.$2.player.name] ?? entry.$1 + 1;
+    }
 
     return _TournamentResultSummary(
       ranking: ranking,
@@ -788,6 +794,7 @@ class _TournamentResultSummary {
 }
 
 class _PlayerResultStats {
+  int place = 0;
   _PlayerResultStats(this.player);
 
   final TournamentPlayer player;

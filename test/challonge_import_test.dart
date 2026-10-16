@@ -382,14 +382,18 @@ void main() {
         scrollable: find.byType(Scrollable).first,
       );
       expect(tester.takeException(), isNull);
+      final eloSwitch = find.descendant(
+        of: find.widgetWithText(SwitchListTile, 'Für Elo und Community-Ranglisten werten'),
+        matching: find.byType(Switch),
+      );
       await tester.scrollUntilVisible(
-        find.byType(Switch),
+        eloSwitch,
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.ensureVisible(find.byType(Switch));
+      await tester.ensureVisible(eloSwitch);
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(Switch));
+      await tester.tap(eloSwitch);
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
         find.byType(Checkbox),

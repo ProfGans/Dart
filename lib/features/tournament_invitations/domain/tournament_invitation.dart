@@ -1,5 +1,5 @@
 class TournamentInvitation {
-  static const publicBase = 'https://profgans.github.io/DartTunier/invite/';
+  static const publicBase = 'https://profgans.github.io/Dart/invite/';
   static String link(String token) => Uri.parse(
     publicBase,
   ).replace(queryParameters: {'tournament': token}).toString();
@@ -11,7 +11,7 @@ class TournamentInvitation {
     final web =
         uri.scheme == 'https' &&
         uri.host == 'profgans.github.io' &&
-        uri.path == '/DartTunier/invite/';
+        uri.path == '/Dart/invite/';
     final parameter = native ? 'token' : 'tournament';
     if ((!native && !web) ||
         uri.userInfo.isNotEmpty ||

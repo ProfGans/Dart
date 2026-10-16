@@ -2,6 +2,8 @@ import 'package:dart_tournament_manager/tournament_workspace.dart'
     show ProductionTournamentRuntime;
 import '../../tournaments/domain/tournament_models.dart';
 import '../../tournaments/domain/imported_tournament_archive.dart';
+import 'challonge_knockout_slots.dart';
+import '../../tournaments/domain/engines/knockout_shared_places.dart';
 
 /// Replays historical results through the same runtime used by the run page.
 /// Source ranks remain evidence and never override calculated standings.
@@ -253,6 +255,9 @@ class ChallongeNativeImport {
               eligibleGroupSize: null,
               extraGroups: const [],
             );
+      final declaredRules = groups.values.expand((matches) => matches).map((m) => m['ranking_rules']).whereType<List>().firstOrNull;
+      final rankingRules = declaredRules == null || declaredRules.isEmpty
+          ? defaultGroupTieBreakers : declaredRules.cast<String>();
       stages.add(
         TournamentStage(
           name: nativeGroups.every((g) => g.playType == 'swiss')
@@ -265,6 +270,7 @@ class ChallongeNativeImport {
           groupPlayTypes: nativeGroups.map((g) => g.playType).toList(),
           groupRoundRobinRepeats: repeats,
           groupMaxGamesPerPlayer: limits,
+          groupTieBreakers: rankingRules,
           fixedQualifiersByGroup: fixed,
           qualifiedParticipantCount: plan?.totalQualifiers,
           qualificationAutoAdjust: false,
@@ -277,12 +283,12 @@ class ChallongeNativeImport {
           groupPlayType: nativeGroups.first.playType,
           groups: nativeGroups,
           qualificationPlan: plan,
-          tieBreakers: defaultGroupTieBreakers,
+          tieBreakers: rankingRules,
         ),
       );
       final runtime = ProductionTournamentRuntime(shell());
       for (final group in nativeGroups) {
-        final calculated = runtime.standings(group, defaultGroupTieBreakers);
+        final calculated = runtime.standings(group, rankingRules);
         for (var i = 0; i < calculated.length; i++) {
           final p = source.participants.singleWhere(
             (p) => p['profileId'] == calculated[i].player.profileId,
@@ -329,6 +335,14 @@ class ChallongeNativeImport {
       for (final p in entrants.where((p) => !slots.contains(p))) {
         slots.add(p);
         slots.add(null);
+      }
+      if (mode == 'single elimination') {
+        final reconstructed = challongeKnockoutSlots(finals);
+        if (reconstructed != null) {
+          slots
+            ..clear()
+            ..addAll(reconstructed.map((id) => id == null ? null : bySourceId[id]));
+        }
       }
       var size = 2;
       while (size < entrants.length) {
@@ -429,6 +443,7 @@ class ChallongeNativeImport {
       }
       runs[runs.length - 1] = replayStage;
       final ranking = replay.ranking(replayStage, entrants);
+      final sharedPlaces = knockoutSharedPlaces(replayStage);
       for (final p in source.participants.where(
         (p) => p['finalRank'] != null,
       )) {
@@ -440,9 +455,10 @@ class ChallongeNativeImport {
             'Gesamtplatz ${p['name']} (${p['finalRank']}) liegt außerhalb der finalen K.-o.-Etappe und wurde nicht gegen deren Rangfolge geprüft. Die Gruppenwertung bleibt separat erhalten.',
           );
         }
-        if (i >= 0 && i + 1 != p['finalRank']) {
+        final calculatedPlace = sharedPlaces[p['profileId']] ?? i + 1;
+        if (i >= 0 && calculatedPlace != p['finalRank']) {
           issues.add(
-            'Endplatz ${p['name']}: berechnet ${i + 1}, Challonge ${p['finalRank']}. Geteilte Plätze und unterschiedliche Tie-Breaker beachten.',
+            'Endplatz ${p['name']}: berechnet $calculatedPlace, Challonge ${p['finalRank']}. Geteilte Plätze und unterschiedliche Tie-Breaker beachten.',
           );
         }
       }

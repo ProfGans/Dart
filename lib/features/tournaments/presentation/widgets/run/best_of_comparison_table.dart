@@ -16,6 +16,8 @@ class BestOfComparisonTable extends StatelessWidget {
     for (final tieBreaker in stage.tieBreakers) {
       final comparison = switch (tieBreaker) {
         'points' => b.standing.points.compareTo(a.standing.points),
+        'matchWins' => (2 * b.standing.wins + b.standing.draws).compareTo(2 * a.standing.wins + a.standing.draws),
+        'setWins' => b.standing.wins.compareTo(a.standing.wins),
         'legDifference' => b.standing.legDifference.compareTo(
           a.standing.legDifference,
         ),

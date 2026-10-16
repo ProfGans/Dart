@@ -1,4 +1,5 @@
 import '../../domain/tournament_models.dart';
+import '../../domain/engines/group_tie_breaker_engine.dart';
 
 /// Dart Swiss: 3/1/0, Buchholz, leg difference, legs won, initial seed.
 /// Future rounds contain empty slots and cannot be scheduled before the barrier.
@@ -30,7 +31,45 @@ class SwissEngine {
         );
   }
 
-  static List<GroupMatch> build(List<TournamentPlayer> players, int rounds) {
+  /// Played opponents only; discard one highest and one lowest score.
+  static int medianBuchholz(
+    TournamentGroup group,
+    TournamentPlayer player,
+    List<PlayerStanding> table, {
+    int? beforeRound,
+  }) {
+    final points = {for (final row in table) row.player: row.points};
+    final opponents =
+        group.matches
+            .where(
+              (m) =>
+                  (beforeRound == null || m.round < beforeRound) &&
+                  m.hasPlayers &&
+                  m.hasResult &&
+                  !m.isAnnulled &&
+                  !m.withdrawalIgnored &&
+                  (m.homePlayer == player || m.awayPlayer == player),
+            )
+            .map(
+              (m) =>
+                  points[m.homePlayer == player
+                      ? m.awayPlayer
+                      : m.homePlayer] ??
+                  0,
+            )
+            .toList()
+          ..sort();
+    final trimmed = opponents.length >= 3
+        ? opponents.sublist(1, opponents.length - 1)
+        : opponents;
+    return trimmed.fold<int>(0, (sum, score) => sum + score);
+  }
+
+  static List<GroupMatch> build(
+    List<TournamentPlayer> players,
+    int rounds, {
+    List<String> tieBreakers = const [],
+  }) {
     if (players.length < 3 ||
         rounds < 1 ||
         rounds > maximumRounds(players.length)) {
@@ -48,14 +87,17 @@ class SwissEngine {
             GroupMatch(round: r, label: 'Swiss · Runde $r'),
       ],
     );
-    advance(group);
+    advance(group, tieBreakers: tieBreakers);
     return group.matches;
   }
 
   static List<PlayerStanding> standings(
     TournamentGroup group, {
     int? beforeRound,
+    List<String> tieBreakers = const [],
   }) {
+    final custom = tieBreakers.contains('swissPoints');
+    final winPoints = custom ? 2 : 3;
     final rows = {for (final p in group.players) p: PlayerStanding(p)};
     final games = group.matches.where(
       (m) => beforeRound == null || m.round < beforeRound,
@@ -63,7 +105,9 @@ class SwissEngine {
     for (final m in games) {
       if (m.isAnnulled || m.withdrawalIgnored) continue;
       if (!m.hasPlayers) {
-        if (m.allowsBye && m.winner != null) rows[m.winner]?.points += 3;
+        if (m.allowsBye && m.winner != null) {
+          rows[m.winner]?.points += winPoints;
+        }
         continue;
       }
       if (!m.hasResult) continue;
@@ -78,7 +122,7 @@ class SwissEngine {
           row.points++;
         } else if (m.winner == p) {
           row.wins++;
-          row.points += 3;
+          row.points += winPoints;
         } else {
           row.losses++;
         }
@@ -98,6 +142,35 @@ class SwissEngine {
               (rows[m.homePlayer == p ? m.awayPlayer : m.homePlayer]?.points ??
                   0),
         );
+    final table = rows.values.toList();
+    if (custom) {
+      final median = <TournamentPlayer, num>{};
+      for (final player in group.players) {
+        median[player] = medianBuchholz(
+          group,
+          player,
+          table,
+          beforeRound: beforeRound,
+        );
+      }
+      final sorted = List.of(table)
+        ..sort((a, b) {
+          final result = GroupTieBreakerEngine.compare(
+            a,
+            b,
+            tieBreakers,
+            table,
+            games.toList(),
+            medianBuchholz: median,
+          );
+          return result != 0
+              ? result
+              : group.players
+                    .indexOf(a.player)
+                    .compareTo(group.players.indexOf(b.player));
+        });
+      return sorted;
+    }
     final sorted = rows.values.toList()
       ..sort((a, b) {
         for (final cmp in [
@@ -115,7 +188,10 @@ class SwissEngine {
     return sorted;
   }
 
-  static void advance(TournamentGroup group) {
+  static void advance(
+    TournamentGroup group, {
+    List<String> tieBreakers = const [],
+  }) {
     final rounds = group.matches.map((m) => m.round).toSet().toList()..sort();
     for (final r in rounds) {
       final slots = group.matches.where((m) => m.round == r).toList();
@@ -125,7 +201,7 @@ class SwissEngine {
       }
       final previous = group.matches.where((m) => m.round < r).toList();
       if (previous.any((m) => !m.isResolved)) return;
-      final table = standings(group, beforeRound: r);
+      final table = standings(group, beforeRound: r, tieBreakers: tieBreakers);
       final ranked = table.map((s) => s.player).toList();
       final points = {for (final s in table) s.player: s.points};
       bool met(TournamentPlayer a, TournamentPlayer b) => previous.any(

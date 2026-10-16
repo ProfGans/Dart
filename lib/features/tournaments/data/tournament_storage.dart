@@ -2,12 +2,14 @@ import '../../../shared/persistence/storage_access.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 
 import '../../../shared/persistence/app_data_directory.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/tournament_models.dart';
+import 'tournament_sync_failure.dart';
 import '../../communities/data/community_access_repository.dart';
 import '../../communities/domain/community_permissions.dart';
 import '../../communities/domain/community_tournament_access.dart';
@@ -244,9 +246,13 @@ class TournamentStorage {
     return next;
   }
 
-  Future<void> _synchronize({String? tournamentId}) async {
+  Future<void> _synchronize({
+    String? tournamentId,
+    Set<String> recreatedSources = const {},
+  }) async {
     final userId = _userId;
     if (userId == null) return;
+    CreatedTournament? attempted;
     try {
       final document = await _locked(_readDocument);
       final pending = Map<String, dynamic>.from(
@@ -260,6 +266,7 @@ class TournamentStorage {
         final tournament = CreatedTournament.fromJson(
           Map<String, dynamic>.from(value['payload'] as Map),
         );
+        attempted = tournament;
         final row = <String, dynamic>{
           'client_tournament_id': tournament.id,
           'owner_user_id': userId,
@@ -308,14 +315,58 @@ class TournamentStorage {
         });
       }
     } on PostgrestException catch (error) {
-      syncStatus.value = error.code == '40001'
-          ? 'Konflikt: Online gibt es neuere Ergebnisse. Online-Stand laden; lokale Änderungen bleiben bis dahin erhalten.'
-          : 'Synchronisierung abgelehnt. Turnierrechte und Servereinrichtung prüfen. Lokale Änderungen bleiben erhalten.';
+      final rejected = attempted;
+      final sourceKey =
+          '${rejected?.communityId}:${rejected?.importedArchive?.sourceId}';
+      if (!recreatedSources.contains(sourceKey) &&
+          error.code == 'P0001' &&
+          error.message == 'Turnier wurde gelöscht' &&
+          rejected?.importedArchive != null) {
+        final newId = await _recreateDeletedImport(rejected!, userId);
+        if (newId != null) {
+          await _synchronize(
+            recreatedSources: {...recreatedSources, sourceKey},
+          );
+          return;
+        }
+      }
+      syncStatus.value = tournamentSyncFailureMessage(error);
     } catch (_) {
       syncStatus.value =
           'Lokal gespeichert – Synchronisierung ausstehend. Automatischer Wiederholungsversuch folgt.';
     }
   }
+
+  /// A deleted server row stays deleted. A deliberate new import gets a new ID.
+  Future<String?> _recreateDeletedImport(
+    CreatedTournament rejected,
+    String userId,
+  ) => _locked(() async {
+    final document = await _readDocument();
+    final pending = Map<String, dynamic>.from(
+      document['pending'] as Map? ?? {},
+    );
+    final entry = pending[rejected.id];
+    if (entry is! Map || entry['userId'] != userId || _userId != userId) {
+      return null;
+    }
+    final newId =
+        '${rejected.id}:reimport:${DateTime.now().microsecondsSinceEpoch}:${Random.secure().nextInt(1 << 32)}';
+    final payload = Map<String, dynamic>.from(entry['payload'] as Map)
+      ..['id'] = newId
+      ..['syncRevision'] = 0;
+    pending.remove(rejected.id);
+    pending[newId] = {...entry, 'payload': payload};
+    for (final item in document['tournaments'] as List? ?? []) {
+      if (item is Map && item['id'] == rejected.id) {
+        item['id'] = newId;
+        item['syncRevision'] = 0;
+      }
+    }
+    document['pending'] = pending;
+    await _writeDocument(document);
+    return newId;
+  });
 
   Future<List<CreatedTournament>> communityTournaments(
     String communityId, [
@@ -326,12 +377,19 @@ class TournamentStorage {
     final pending = document['pending'] as Map? ?? {};
     final local = await _loadTournamentsUnlocked();
     if (remote != null) {
+      final pendingImports = {
+        for (final item in local)
+          if (item.importedArchive != null && pending.containsKey(item.id))
+            item.id,
+      };
       local.removeWhere(
         (item) =>
-            item.communityId == communityId && deletedIds.contains(item.id),
+            item.communityId == communityId &&
+            deletedIds.contains(item.id) &&
+            !pendingImports.contains(item.id),
       );
       for (final id in deletedIds) {
-        pending.remove(id);
+        if (!pendingImports.contains(id)) pending.remove(id);
       }
       document['pending'] = pending;
       await _writeDocument(document);
