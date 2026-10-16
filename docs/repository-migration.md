@@ -2,7 +2,7 @@
 
 Aktives Repository: https://github.com/ProfGans/Dart
 
-Der lokale Arbeitsstand inklusive vorher uncommitteter App-Aenderungen wird als master uebernommen. Die Git-Historie bleibt erhalten. Der neuere master des bisherigen Repositorys bleibt separat unter codex/source-master erhalten; er wird nicht automatisch in den lokalen Stand gemergt.
+Der lokale Arbeitsstand inklusive vorher uncommitteter App-Aenderungen wird als master uebernommen. Die Git-Historie bleibt erhalten. Der neuere master des bisherigen Repositorys bleibt als legacy/master lokal erreichbar; er wird nicht automatisch in den lokalen Stand gemergt. Alte Entwicklungsbranches werden nicht ins neue Repository veroeffentlicht.
 
 origin bezeichnet das neue Repository. legacy bleibt als lesende Referenz auf ProfGans/DartTunier erhalten; seine Push-URL ist lokal gesperrt. Das bisherige GitHub-Repository wird nicht veraendert.
 
