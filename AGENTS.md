@@ -87,3 +87,10 @@ lib/
 - Bei UI-Aenderungen `flutter analyze` und passende Widget-Tests ausfuehren. Responsive Regressionen mit mindestens 360x800, 800x600 und 1440x900 sowie grosser Schrift absichern; bei Bedarf 320 Pixel und Querformat ergaenzen. Vor Abschluss betroffene Ansichten visuell auf Desktop und Mobile pruefen, soweit die Umgebung dies erlaubt; fehlende Geraete-/Sichtpruefungen ausdruecklich nennen.
 - Bestehende Turnier-Entwicklungstests bleiben zusaetzlich verbindlich. Designpruefung darf Fachlogik und Persistenz nicht veraendern.
 - Gemeinsame responsive Regressionstests: `flutter test test/adaptive_layout_test.dart test/responsive_pages_test.dart`. Details und optionale gerenderte Vorschauen stehen in `docs/responsive_design.md`; bei neuen Seiten die Matrix erweitern.
+
+## Aktives GitHub-Repository
+
+- Seit 16.10.2026 ist `https://github.com/ProfGans/Dart` das aktive Repository fuer dieses lokale Projekt.
+- Aenderungen ausschliesslich nach `origin` (`ProfGans/Dart`) pushen.
+- `ProfGans/DartTunier` bleibt als eigenstaendiges zweites Projekt unveraendert. Der lokale Remote `legacy` dient nur als lesende Referenz.
+- Details zur Uebernahme stehen in `docs/repository-migration.md`.
